@@ -2,12 +2,22 @@
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Upload, X, Paperclip } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 type Message = {
   id: string;
   text: string;
   isUser: boolean;
   isComplete: boolean;
+  attachments?: Array<{
+    name: string;
+    type: string;
+    size: number;
+    content?: string | ArrayBuffer | null;
+  }>;
 };
 
 export interface ChatInterfaceHandle {
@@ -16,7 +26,7 @@ export interface ChatInterfaceHandle {
 }
 
 interface ChatInterfaceProps {
-  onSendMessage?: (message: string) => void;
+  onSendMessage?: (message: string, attachments?: any[]) => void;
   onAIResponse?: (response: string) => void;
 }
 
@@ -27,30 +37,40 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hello, I'm Norman AGI. How can I assist you today?",
+      text: "Hello, I'm Norman AGI. How can I assist you today? You can also attach files for analysis.",
       isUser: false,
       isComplete: true
     }
   ]);
   const [currentInput, setCurrentInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [attachments, setAttachments] = useState<Array<{
+    name: string;
+    type: string;
+    size: number;
+    content?: string | ArrayBuffer | null;
+  }>>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentInput.trim()) return;
+    if (!currentInput.trim() && attachments.length === 0) return;
 
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       text: currentInput,
       isUser: true,
-      isComplete: true
+      isComplete: true,
+      attachments: attachments.length > 0 ? [...attachments] : undefined
     };
     
     setMessages(prev => [...prev, userMessage]);
-    onSendMessage(currentInput);
+    onSendMessage(currentInput, attachments);
     setCurrentInput('');
+    setAttachments([]);
     
     // Simulate AGI response streaming
     simulateResponseStreaming();
@@ -119,6 +139,58 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
     }, 50);
   };
 
+  // Handle file attachment
+  const handleFileAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    const maxSize = 10 * 1024 * 1024; // 10MB limit
+
+    // Check file sizes
+    const oversizedFiles = fileArray.filter(file => file.size > maxSize);
+    if (oversizedFiles.length > 0) {
+      toast({
+        title: "File size exceeded",
+        description: `Files must be smaller than 10MB.`,
+        variant: "destructive"
+      });
+      e.target.value = '';
+      return;
+    }
+
+    // Process each file
+    fileArray.forEach(file => {
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setAttachments(prev => [
+            ...prev,
+            {
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              content: event.target.result
+            }
+          ]);
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
   // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -170,6 +242,19 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
                 {!message.isComplete && (
                   <span className="inline-block ml-1 animate-pulse">▌</span>
                 )}
+                
+                {/* Display attachments if any */}
+                {message.attachments && message.attachments.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs font-semibold">Attachments:</p>
+                    {message.attachments.map((file, index) => (
+                      <div key={index} className="text-xs bg-black/10 p-1 rounded flex items-center gap-1">
+                        <Paperclip className="w-3 h-3" />
+                        <span className="truncate">{file.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -177,23 +262,60 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
         </div>
       </ScrollArea>
       
+      {/* Attachment display */}
+      {attachments.length > 0 && (
+        <div className="p-2 border-t bg-muted/30">
+          <div className="flex flex-wrap gap-2">
+            {attachments.map((file, index) => (
+              <div key={index} className="bg-primary/10 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                <span className="truncate max-w-[120px]">{file.name}</span>
+                <button 
+                  type="button" 
+                  onClick={() => removeAttachment(index)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Input form with file upload */}
       <form onSubmit={handleSendMessage} className="p-3 border-t">
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={currentInput}
-            onChange={(e) => setCurrentInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-grow p-2 rounded-md border"
-            disabled={isStreaming}
-          />
-          <button 
+          <div className="relative flex-grow">
+            <Input
+              value={currentInput}
+              onChange={(e) => setCurrentInput(e.target.value)}
+              placeholder="Type your message..."
+              className="pr-10"
+              disabled={isStreaming}
+            />
+            <button 
+              type="button" 
+              onClick={triggerFileInput}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
+              disabled={isStreaming}
+            >
+              <Paperclip className="w-5 h-5" />
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileAttachment} 
+              className="hidden" 
+              multiple 
+            />
+          </div>
+          <Button 
             type="submit" 
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-md"
-            disabled={isStreaming || !currentInput.trim()}
+            disabled={isStreaming || (!currentInput.trim() && attachments.length === 0)}
+            size="icon"
           >
-            Send
-          </button>
+            <Upload className="w-4 h-4" />
+          </Button>
         </div>
       </form>
     </div>
