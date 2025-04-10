@@ -15,28 +15,31 @@ const SplitWebView: React.FC<SplitWebViewProps> = ({
   onSpeakToggle = () => {}
 }) => {
   return (
-    <ResizablePanelGroup
-      direction="horizontal"
-      className="min-h-[300px] rounded-lg border"
-    >
-      <ResizablePanel defaultSize={50}>
-        <WebView 
-          initialUrl={initialUrls[0]} 
-          onVoiceInput={(text) => onVoiceInput(text, 0)}
-          onSpeakToggle={(isSpeaking) => onSpeakToggle(isSpeaking, 0)}
-        />
-      </ResizablePanel>
-      
-      <ResizableHandle withHandle />
-      
-      <ResizablePanel defaultSize={50}>
-        <WebView 
-          initialUrl={initialUrls[1]}
-          onVoiceInput={(text) => onVoiceInput(text, 1)}
-          onSpeakToggle={(isSpeaking) => onSpeakToggle(isSpeaking, 1)}
-        />
-      </ResizablePanel>
-    </ResizablePanelGroup>
+    <div className="h-full flex flex-col">
+      <h2 className="text-lg font-semibold mb-2">Web Browsers</h2>
+      <ResizablePanelGroup
+        direction="vertical"
+        className="flex-1 rounded-lg border"
+      >
+        <ResizablePanel defaultSize={50}>
+          <WebView 
+            initialUrl={initialUrls[0]} 
+            onVoiceInput={(text) => onVoiceInput(text, 0)}
+            onSpeakToggle={(isSpeaking) => onSpeakToggle(isSpeaking, 0)}
+          />
+        </ResizablePanel>
+        
+        <ResizableHandle withHandle />
+        
+        <ResizablePanel defaultSize={50}>
+          <WebView 
+            initialUrl={initialUrls[1]}
+            onVoiceInput={(text) => onVoiceInput(text, 1)}
+            onSpeakToggle={(isSpeaking) => onSpeakToggle(isSpeaking, 1)}
+          />
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
   );
 };
 
