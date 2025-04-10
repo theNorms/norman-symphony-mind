@@ -234,7 +234,7 @@ const Index = () => {
               {isJoined ? "Leave Discussion" : "Join Discussion"}
             </Button>
 
-            {/* Voice control buttons moved to the top */}
+            {/* Voice control buttons */}
             <button 
               onClick={toggleSpeaking}
               className={cn(
