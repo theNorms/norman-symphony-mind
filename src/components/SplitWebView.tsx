@@ -19,7 +19,7 @@ const SplitWebView: React.FC<SplitWebViewProps> = ({
       <h2 className="text-lg font-semibold mb-2">Web Browsers</h2>
       <ResizablePanelGroup
         direction="vertical"
-        className="flex-1 rounded-lg border"
+        className="flex-1 rounded-lg border h-full"
       >
         <ResizablePanel defaultSize={50}>
           <WebView 

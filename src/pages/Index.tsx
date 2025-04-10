@@ -5,8 +5,8 @@ import ChatInterface, { ChatInterfaceHandle } from '@/components/ChatInterface';
 import BlogArticle from '@/components/BlogArticle';
 import SplitWebView from '@/components/SplitWebView';
 import CompactVoiceControls from '@/components/CompactVoiceControls';
-import CompactChatInterface from '@/components/CompactChatInterface';
 import { toast } from '@/components/ui/use-toast';
+import ChatInterface2 from '@/components/ChatInterface2';
 
 // AGI configurations
 const normanAGI = {
@@ -116,7 +116,7 @@ const Index = () => {
           onUserSpeech={handleSecondaryAIMessage}
           onSpeakToggle={(isSpeaking) => console.log(`${solaraAGI.name} speaking:`, isSpeaking)}
         />
-        <CompactChatInterface 
+        <ChatInterface2 
           title="Secondary AI"
           aiName={solaraAGI.name}
           onSendMessage={handleSecondaryAIMessage}
@@ -124,9 +124,9 @@ const Index = () => {
       </div>
       
       {/* Main content */}
-      <div className="container mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Left side: Web Views */}
-        <div className="h-[600px]">
+      <div className="container mx-auto px-4 py-8 flex h-[calc(100vh-150px)]">
+        {/* Left side: Web Views - Taking full height */}
+        <div className="flex-1 mr-6">
           <SplitWebView 
             onVoiceInput={handleWebViewVoiceInput}
             onSpeakToggle={handleWebViewSpeakToggle}
@@ -134,7 +134,7 @@ const Index = () => {
         </div>
         
         {/* Right side: Blog Article Area */}
-        <div>
+        <div className="w-1/3">
           <BlogArticle 
             title={blogTitle}
             content={blogContent}
