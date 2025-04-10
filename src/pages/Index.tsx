@@ -1,28 +1,11 @@
 
 import React, { useRef, useCallback } from 'react';
-import VoiceUI from '@/components/VoiceUI';
-import ChatInterface from '@/components/ChatInterface';
-
-// Add TypeScript declarations for Web Speech API
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
+import VoiceUI, { VoiceUIHandle } from '@/components/VoiceUI';
+import ChatInterface, { ChatInterfaceHandle } from '@/components/ChatInterface';
 
 const Index = () => {
-  const voiceUIRef = useRef<{
-    speak: (text: string) => void;
-    stopSpeaking: () => void;
-    startListening: () => void;
-    stopListening: () => void;
-  }>(null);
-  
-  const chatInterfaceRef = useRef<{
-    handleVoiceInput: (transcript: string) => void;
-    addAIMessage: (text: string) => void;
-  }>(null);
+  const voiceUIRef = useRef<VoiceUIHandle>(null);
+  const chatInterfaceRef = useRef<ChatInterfaceHandle>(null);
 
   // Handle user speech from voice recognition
   const handleUserSpeech = useCallback((transcript: string) => {

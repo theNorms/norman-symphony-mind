@@ -1,18 +1,53 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Mic, MicOff, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+
+// Define SpeechRecognition types
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionError extends Event {
+  error: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionError) => void) | null;
+}
+
+// Add TypeScript declarations for Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
+export interface VoiceUIHandle {
+  speak: (text: string) => void;
+  stopSpeaking: () => void;
+  startListening: () => void;
+  stopListening: () => void;
+}
 
 interface VoiceUIProps {
   onUserSpeech?: (text: string) => void;
   onSpeakToggle?: (isSpeaking: boolean) => void;
 }
 
-const VoiceUI: React.FC<VoiceUIProps> = ({ 
+const VoiceUI = forwardRef<VoiceUIHandle, VoiceUIProps>(({ 
   onUserSpeech = () => {}, 
   onSpeakToggle = () => {} 
-}) => {
+}, ref) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -137,29 +172,26 @@ const VoiceUI: React.FC<VoiceUIProps> = ({
   };
 
   // Expose functions via ref
-  React.useImperativeHandle(
-    React.forwardRef((props, ref) => ref),
-    () => ({
-      speak,
-      stopSpeaking: () => {
-        window.speechSynthesis.cancel();
-        setIsSpeaking(false);
-        onSpeakToggle(false);
-      },
-      startListening: () => {
-        if (!isListening && recognitionRef.current) {
-          recognitionRef.current.start();
-          setIsListening(true);
-        }
-      },
-      stopListening: () => {
-        if (isListening && recognitionRef.current) {
-          recognitionRef.current.stop();
-          setIsListening(false);
-        }
+  useImperativeHandle(ref, () => ({
+    speak,
+    stopSpeaking: () => {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      onSpeakToggle(false);
+    },
+    startListening: () => {
+      if (!isListening && recognitionRef.current) {
+        recognitionRef.current.start();
+        setIsListening(true);
       }
-    })
-  );
+    },
+    stopListening: () => {
+      if (isListening && recognitionRef.current) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+      }
+    }
+  }));
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
@@ -218,6 +250,8 @@ const VoiceUI: React.FC<VoiceUIProps> = ({
       </div>
     </div>
   );
-};
+});
+
+VoiceUI.displayName = 'VoiceUI';
 
 export default VoiceUI;

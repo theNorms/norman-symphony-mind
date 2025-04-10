@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -10,15 +10,20 @@ type Message = {
   isComplete: boolean;
 };
 
+export interface ChatInterfaceHandle {
+  handleVoiceInput: (transcript: string) => void;
+  addAIMessage: (text: string) => void;
+}
+
 interface ChatInterfaceProps {
   onSendMessage?: (message: string) => void;
   onAIResponse?: (response: string) => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
-  onSendMessage = () => {}, 
-  onAIResponse = () => {}
-}) => {
+const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
+  { onSendMessage = () => {}, onAIResponse = () => {} },
+  ref
+) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -120,25 +125,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [messages]);
 
   // Expose methods via ref
-  React.useImperativeHandle(
-    React.forwardRef((props, ref) => ref),
-    () => ({
-      handleVoiceInput,
-      addAIMessage: (text: string) => {
-        const responseId = Date.now().toString();
-        setMessages(prev => [
-          ...prev, 
-          {
-            id: responseId,
-            text,
-            isUser: false,
-            isComplete: true
-          }
-        ]);
-        onAIResponse(text);
-      }
-    })
-  );
+  useImperativeHandle(ref, () => ({
+    handleVoiceInput,
+    addAIMessage: (text: string) => {
+      const responseId = Date.now().toString();
+      setMessages(prev => [
+        ...prev, 
+        {
+          id: responseId,
+          text,
+          isUser: false,
+          isComplete: true
+        }
+      ]);
+      onAIResponse(text);
+    }
+  }));
 
   return (
     <div className="fixed bottom-24 right-6 w-80 sm:w-96 h-96 bg-card rounded-lg shadow-lg overflow-hidden flex flex-col">
@@ -196,6 +198,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </form>
     </div>
   );
-};
+});
+
+ChatInterface.displayName = 'ChatInterface';
 
 export default ChatInterface;
