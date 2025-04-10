@@ -22,6 +22,8 @@ type Message = {
 
 export interface ChatInterface2Handle {
   handleVoiceInput: (text: string) => void;
+  clearChat: () => void;
+  sendMessage: (text: string, attachments?: File[]) => void;
 }
 
 interface ChatInterface2Props {
@@ -42,7 +44,7 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: `Hello! I'm ${aiName}. How can I assist you today?`,
+      text: `Hello! I'm ${aiName}. I'm here to assist with the group discussion about the election mission in ${aiName === "Solara" ? "Imus, Cavite" : "your location"}.`,
       isUser: false,
       isComplete: true
     }
@@ -56,7 +58,42 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Expose the handleVoiceInput method to parent components via ref
+  // Clear chat function
+  const clearChat = () => {
+    setMessages([{
+      id: Date.now().toString(),
+      text: `Chat cleared. I'm ${aiName}. How can I assist with our discussion?`,
+      isUser: false,
+      isComplete: true
+    }]);
+    onClear();
+  };
+
+  // Send message function
+  const sendMessage = (text: string, files?: File[]) => {
+    if (!text.trim() && (!files || files.length === 0)) return;
+    
+    // Add user message
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: text || (files && files.length > 0 ? "Sending attachments..." : ""),
+      isUser: true,
+      isComplete: true,
+      attachments: files ? files.map(file => ({
+        name: file.name,
+        type: file.type,
+        size: file.size
+      })) : undefined
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    onSendMessage(text, files);
+    
+    // Simulate AI response
+    simulateResponseStreaming(text);
+  };
+
+  // Expose methods to parent components via ref
   useImperativeHandle(ref, () => ({
     handleVoiceInput: (text: string) => {
       if (text.trim()) {
@@ -68,42 +105,37 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
         };
         
         setMessages(prev => [...prev, userMessage]);
+        onSendMessage(text);
         
         // Simulate AI response to voice input
-        simulateResponseStreaming(`I heard you say: "${text}". Let me think about that...`);
+        simulateResponseStreaming(text);
       }
-    }
+    },
+    clearChat,
+    sendMessage
   }));
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentInput.trim() && attachments.length === 0) return;
-
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: currentInput || (attachments.length > 0 ? "Sending attachments..." : ""),
-      isUser: true,
-      isComplete: true,
-      attachments: attachments.length > 0 ? attachments.map(file => ({
-        name: file.name,
-        type: file.type,
-        size: file.size
-      })) : undefined
-    };
     
-    setMessages(prev => [...prev, userMessage]);
-    onSendMessage(currentInput, attachments.length > 0 ? attachments : undefined);
+    sendMessage(currentInput, attachments.length > 0 ? attachments : undefined);
     setCurrentInput('');
     setAttachments([]);
-    
-    // Simulate AI response
-    simulateResponseStreaming();
   };
 
-  const simulateResponseStreaming = (customResponse?: string) => {
+  const simulateResponseStreaming = (userMessage?: string) => {
     const responseId = (Date.now() + 1).toString();
-    const fullResponse = customResponse || "I'm analyzing your request and preparing a response...";
+    let fullResponse = "I'm analyzing your request and preparing a response...";
+    
+    // Customize response based on context if it's Solara
+    if (aiName === "Solara" && userMessage) {
+      if (userMessage.toLowerCase().includes("election") || userMessage.toLowerCase().includes("candidate")) {
+        fullResponse = "I'm analyzing potential candidates in Imus, Cavite based on their track records, ethics, and alignment with smart city initiatives. This requires checking public service history and ensuring they have no involvement with corruption.";
+      } else if (userMessage.toLowerCase().includes("smart city")) {
+        fullResponse = "Smart city implementation in Imus, Cavite requires trustworthy leadership focused on sustainable development and technology integration. I can help identify which candidates have the vision and integrity for this transformation.";
+      }
+    }
     
     // Add initial empty response
     setMessages(prev => [
@@ -202,13 +234,7 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
             className="text-primary-foreground hover:text-primary-foreground/80 h-8 w-8 p-0"
             onClick={(e) => {
               e.stopPropagation();
-              onClear();
-              setMessages([{
-                id: Date.now().toString(),
-                text: `Chat cleared. I'm ${aiName}. How can I assist you?`,
-                isUser: false,
-                isComplete: true
-              }]);
+              clearChat();
             }}
           >
             <X className="h-4 w-4" />

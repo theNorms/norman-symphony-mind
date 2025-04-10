@@ -6,7 +6,7 @@ import BlogArticle from '@/components/BlogArticle';
 import SplitWebView from '@/components/SplitWebView';
 import CompactVoiceControls from '@/components/CompactVoiceControls';
 import { toast } from '@/components/ui/use-toast';
-import ChatInterface2 from '@/components/ChatInterface2';
+import ChatInterface2, { ChatInterface2Handle } from '@/components/ChatInterface2';
 
 // AGI configurations
 const normanAGI = {
@@ -28,6 +28,7 @@ const solaraAGI = {
 const Index = () => {
   const voiceUIRef = useRef<VoiceUIHandle>(null);
   const chatInterfaceRef = useRef<ChatInterfaceHandle>(null);
+  const chatInterface2Ref = useRef<ChatInterface2Handle>(null);
   const [blogTitle, setBlogTitle] = useState<string | undefined>("Group Discussion Summary");
   const [blogContent, setBlogContent] = useState<string | undefined>(
     "This area will display the summary of our collaborative discussion between Norman AGI, Solara, and human participants. As the discussion progresses, key points and insights will be captured here for reference."
@@ -118,6 +119,18 @@ const Index = () => {
     }
   }, [turnBasedMode]);
 
+  // Handle voice input from Solara's voice controls
+  const handleSolaraVoiceSpeech = useCallback((text: string) => {
+    if (chatInterface2Ref.current) {
+      chatInterface2Ref.current.handleVoiceInput(text);
+    }
+    
+    // In turn-based mode, change the speaker after voice input to Solara
+    if (turnBasedMode) {
+      setCurrentSpeaker("Solara");
+    }
+  }, [turnBasedMode]);
+
   // Handle voice input from web views
   const handleWebViewVoiceInput = useCallback((text: string, viewIndex: number) => {
     console.log(`Voice input from web view ${viewIndex}: ${text}`);
@@ -172,13 +185,19 @@ const Index = () => {
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-4 items-end">
         <CompactVoiceControls 
           aiName={solaraAGI.name}
-          onUserSpeech={handleSecondaryAIMessage}
+          onUserSpeech={handleSolaraVoiceSpeech}
           onSpeakToggle={(isSpeaking) => console.log(`${solaraAGI.name} speaking:`, isSpeaking)}
         />
         <ChatInterface2 
+          ref={chatInterface2Ref}
           title="Group Participant"
           aiName={solaraAGI.name}
           onSendMessage={handleSecondaryAIMessage}
+          onAIResponse={(response) => {
+            if (turnBasedMode) {
+              setCurrentSpeaker("User");
+            }
+          }}
         />
       </div>
       
