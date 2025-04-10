@@ -33,39 +33,42 @@ const VoiceUI = () => {
           )}
         />
         
-        {/* Main voice button */}
-        <button 
-          onClick={toggleListening}
-          className={cn(
-            "relative z-10 flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-300",
-            isListening 
-              ? "bg-red-500 hover:bg-red-600" 
-              : "bg-primary hover:bg-primary/80"
-          )}
-        >
-          {isListening ? (
-            <MicOff className="w-6 h-6 text-white" />
-          ) : (
-            <Mic className="w-6 h-6 text-white" />
-          )}
-        </button>
-        
-        {/* Audio controls */}
-        <button 
-          onClick={toggleSpeaking}
-          className={cn(
-            "absolute -top-10 -right-2 flex items-center justify-center w-10 h-10 rounded-full shadow-md transition-all duration-300",
-            isSpeaking 
-              ? "bg-red-500 hover:bg-red-600" 
-              : "bg-secondary hover:bg-secondary/80"
-          )}
-        >
-          {isSpeaking ? (
-            <Pause className="w-4 h-4" />
-          ) : (
-            <Play className="w-4 h-4" />
-          )}
-        </button>
+        {/* Button container - horizontal layout */}
+        <div className="flex items-center gap-3">
+          {/* Audio control button - same size as mic button */}
+          <button 
+            onClick={toggleSpeaking}
+            className={cn(
+              "flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-300",
+              isSpeaking 
+                ? "bg-red-500 hover:bg-red-600" 
+                : "bg-secondary hover:bg-secondary/80"
+            )}
+          >
+            {isSpeaking ? (
+              <Pause className="w-6 h-6 text-white" />
+            ) : (
+              <Play className="w-6 h-6 text-white" />
+            )}
+          </button>
+          
+          {/* Microphone button */}
+          <button 
+            onClick={toggleListening}
+            className={cn(
+              "flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-300",
+              isListening 
+                ? "bg-red-500 hover:bg-red-600" 
+                : "bg-primary hover:bg-primary/80"
+            )}
+          >
+            {isListening ? (
+              <MicOff className="w-6 h-6 text-white" />
+            ) : (
+              <Mic className="w-6 h-6 text-white" />
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
