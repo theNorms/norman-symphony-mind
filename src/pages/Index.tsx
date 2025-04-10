@@ -3,6 +3,8 @@ import React, { useRef, useCallback, useState } from 'react';
 import VoiceUI, { VoiceUIHandle } from '@/components/VoiceUI';
 import ChatInterface, { ChatInterfaceHandle } from '@/components/ChatInterface';
 import BlogArticle from '@/components/BlogArticle';
+import SplitWebView from '@/components/SplitWebView';
+import CompactVoiceControls from '@/components/CompactVoiceControls';
 import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
@@ -53,15 +55,44 @@ const Index = () => {
     }
   }, []);
 
+  // Handle voice input from web views
+  const handleWebViewVoiceInput = useCallback((text: string, viewIndex: number) => {
+    console.log(`Voice input from web view ${viewIndex}: ${text}`);
+    // In a real implementation, this would process the voice input
+    // specifically for the web view that generated it
+  }, []);
+
+  // Handle speak toggle from web views
+  const handleWebViewSpeakToggle = useCallback((isSpeaking: boolean, viewIndex: number) => {
+    console.log(`Web view ${viewIndex} speaking state: ${isSpeaking}`);
+    // In a real implementation, this would coordinate the speaking state
+    // specifically for the web view that triggered it
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Blog Article Area */}
-      <main className="pt-8 pb-24">
+      {/* Top controls */}
+      <CompactVoiceControls 
+        onUserSpeech={handleUserSpeech}
+        onSpeakToggle={handleSpeakToggle}
+      />
+      
+      {/* Split the page into two sections */}
+      <div className="container mx-auto px-4 py-8 flex flex-col gap-8">
+        {/* Blog Article Area */}
         <BlogArticle 
           title={blogTitle}
           content={blogContent}
         />
-      </main>
+        
+        {/* Web Views Area */}
+        <div className="h-[500px]">
+          <SplitWebView 
+            onVoiceInput={handleWebViewVoiceInput}
+            onSpeakToggle={handleWebViewSpeakToggle}
+          />
+        </div>
+      </div>
       
       {/* Voice UI and Chat Interface components */}
       <ChatInterface 
