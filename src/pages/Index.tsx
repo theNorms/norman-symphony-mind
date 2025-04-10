@@ -3,7 +3,6 @@ import React, { useRef, useCallback, useState } from 'react';
 import VoiceUI, { VoiceUIHandle } from '@/components/VoiceUI';
 import ChatInterface, { ChatInterfaceHandle } from '@/components/ChatInterface';
 import SplitWebView from '@/components/SplitWebView';
-import CompactVoiceControls from '@/components/CompactVoiceControls';
 import { toast } from '@/components/ui/use-toast';
 import ChatInterface2, { ChatInterface2Handle } from '@/components/ChatInterface2';
 import { Users, Mic, MicOff } from 'lucide-react';
