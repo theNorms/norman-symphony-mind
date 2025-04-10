@@ -10,7 +10,15 @@ type Message = {
   isComplete: boolean;
 };
 
-const ChatInterface = () => {
+interface ChatInterfaceProps {
+  onSendMessage?: (message: string) => void;
+  onAIResponse?: (response: string) => void;
+}
+
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
+  onSendMessage = () => {}, 
+  onAIResponse = () => {}
+}) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -36,7 +44,27 @@ const ChatInterface = () => {
     };
     
     setMessages(prev => [...prev, userMessage]);
+    onSendMessage(currentInput);
     setCurrentInput('');
+    
+    // Simulate AGI response streaming
+    simulateResponseStreaming();
+  };
+
+  // Add a method to handle voice input
+  const handleVoiceInput = (transcript: string) => {
+    if (!transcript.trim()) return;
+    
+    // Add user message from voice
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: transcript,
+      isUser: true,
+      isComplete: true
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    onSendMessage(transcript);
     
     // Simulate AGI response streaming
     simulateResponseStreaming();
@@ -81,6 +109,7 @@ const ChatInterface = () => {
               : msg
           )
         );
+        onAIResponse(fullResponse);
       }
     }, 50);
   };
@@ -89,6 +118,27 @@ const ChatInterface = () => {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Expose methods via ref
+  React.useImperativeHandle(
+    React.forwardRef((props, ref) => ref),
+    () => ({
+      handleVoiceInput,
+      addAIMessage: (text: string) => {
+        const responseId = Date.now().toString();
+        setMessages(prev => [
+          ...prev, 
+          {
+            id: responseId,
+            text,
+            isUser: false,
+            isComplete: true
+          }
+        ]);
+        onAIResponse(text);
+      }
+    })
+  );
 
   return (
     <div className="fixed bottom-24 right-6 w-80 sm:w-96 h-96 bg-card rounded-lg shadow-lg overflow-hidden flex flex-col">
