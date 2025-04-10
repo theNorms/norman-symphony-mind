@@ -183,11 +183,13 @@ const Index = () => {
       
       {/* Solara AGI Interface */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-4 items-end">
-        <CompactVoiceControls 
-          aiName={solaraAGI.name}
-          onUserSpeech={handleSolaraVoiceSpeech}
-          onSpeakToggle={(isSpeaking) => console.log(`${solaraAGI.name} speaking:`, isSpeaking)}
-        />
+        <div className="flex items-center gap-2">
+          <CompactVoiceControls 
+            aiName={solaraAGI.name}
+            onUserSpeech={handleSolaraVoiceSpeech}
+            onSpeakToggle={(isSpeaking) => console.log(`${solaraAGI.name} speaking:`, isSpeaking)}
+          />
+        </div>
         <ChatInterface2 
           ref={chatInterface2Ref}
           title="Group Participant"

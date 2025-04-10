@@ -284,7 +284,7 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
       
       {/* Input form with file upload */}
       <form onSubmit={handleSendMessage} className="p-3 border-t">
-        <div className="flex gap-2">
+        <div className="flex items-center">
           <div className="relative flex-grow">
             <Input
               value={currentInput}
@@ -313,6 +313,7 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
             type="submit" 
             disabled={isStreaming || (!currentInput.trim() && attachments.length === 0)}
             size="icon"
+            className="ml-2"
           >
             <Upload className="w-4 h-4" />
           </Button>
