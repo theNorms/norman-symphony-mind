@@ -1,10 +1,10 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Upload, X, Paperclip } from 'lucide-react';
+import { Upload, X, Paperclip, Maximize2, Minimize2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 type Message = {
@@ -20,19 +20,25 @@ type Message = {
   }>;
 };
 
+export interface ChatInterface2Handle {
+  handleVoiceInput: (text: string) => void;
+}
+
 interface ChatInterface2Props {
   title?: string;
   aiName?: string;
   onSendMessage?: (message: string, attachments?: File[]) => void;
+  onAIResponse?: (response: string) => void;
   onClear?: () => void;
 }
 
-const ChatInterface2: React.FC<ChatInterface2Props> = ({
+const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
   title = "Secondary AI",
   aiName = "Solara",
   onSendMessage = () => {},
+  onAIResponse = () => {},
   onClear = () => {}
-}) => {
+}, ref) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -45,9 +51,29 @@ const ChatInterface2: React.FC<ChatInterface2Props> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [isMinimized, setIsMinimized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Expose the handleVoiceInput method to parent components via ref
+  useImperativeHandle(ref, () => ({
+    handleVoiceInput: (text: string) => {
+      if (text.trim()) {
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          text: text,
+          isUser: true,
+          isComplete: true
+        };
+        
+        setMessages(prev => [...prev, userMessage]);
+        
+        // Simulate AI response to voice input
+        simulateResponseStreaming(`I heard you say: "${text}". Let me think about that...`);
+      }
+    }
+  }));
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,9 +101,9 @@ const ChatInterface2: React.FC<ChatInterface2Props> = ({
     simulateResponseStreaming();
   };
 
-  const simulateResponseStreaming = () => {
+  const simulateResponseStreaming = (customResponse?: string) => {
     const responseId = (Date.now() + 1).toString();
-    const fullResponse = "I'm analyzing your request and preparing a response...";
+    const fullResponse = customResponse || "I'm analyzing your request and preparing a response...";
     
     // Add initial empty response
     setMessages(prev => [
@@ -114,6 +140,7 @@ const ChatInterface2: React.FC<ChatInterface2Props> = ({
               : msg
           )
         );
+        onAIResponse(fullResponse);
       }
     }, 50);
   };
@@ -139,35 +166,54 @@ const ChatInterface2: React.FC<ChatInterface2Props> = ({
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Toggle between minimized and expanded states
+  const toggleMinimized = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMinimized(!isMinimized);
+  };
+
   // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isExpanded]);
 
   return (
-    <div className="relative w-96 border rounded-lg shadow-lg overflow-hidden">
+    <div className={cn(
+      "relative border rounded-lg shadow-lg overflow-hidden transition-all duration-300",
+      isMinimized ? "w-64" : "w-96"
+    )}>
       <div 
         className="flex justify-between items-center p-2 bg-primary text-primary-foreground cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <h3 className="font-semibold">{title} ({aiName})</h3>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="text-primary-foreground hover:text-primary-foreground/80 h-8 w-8 p-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClear();
-            setMessages([{
-              id: Date.now().toString(),
-              text: `Chat cleared. I'm ${aiName}. How can I assist you?`,
-              isUser: false,
-              isComplete: true
-            }]);
-          }}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-primary-foreground hover:text-primary-foreground/80 h-8 w-8 p-0"
+            onClick={toggleMinimized}
+          >
+            {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-primary-foreground hover:text-primary-foreground/80 h-8 w-8 p-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear();
+              setMessages([{
+                id: Date.now().toString(),
+                text: `Chat cleared. I'm ${aiName}. How can I assist you?`,
+                isUser: false,
+                isComplete: true
+              }]);
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       
       <div
@@ -277,6 +323,8 @@ const ChatInterface2: React.FC<ChatInterface2Props> = ({
       </div>
     </div>
   );
-};
+});
+
+ChatInterface2.displayName = "ChatInterface2";
 
 export default ChatInterface2;

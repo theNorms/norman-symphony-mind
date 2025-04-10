@@ -28,15 +28,24 @@ const solaraAGI = {
 const Index = () => {
   const voiceUIRef = useRef<VoiceUIHandle>(null);
   const chatInterfaceRef = useRef<ChatInterfaceHandle>(null);
-  const [blogTitle, setBlogTitle] = useState<string | undefined>();
-  const [blogContent, setBlogContent] = useState<string | undefined>();
+  const [blogTitle, setBlogTitle] = useState<string | undefined>("Group Discussion Summary");
+  const [blogContent, setBlogContent] = useState<string | undefined>(
+    "This area will display the summary of our collaborative discussion between Norman AGI, Solara, and human participants. As the discussion progresses, key points and insights will be captured here for reference."
+  );
+  const [turnBasedMode, setTurnBasedMode] = useState(false);
+  const [currentSpeaker, setCurrentSpeaker] = useState("User");
 
   // Handle user speech from voice recognition
   const handleUserSpeech = useCallback((transcript: string) => {
     if (chatInterfaceRef.current) {
       chatInterfaceRef.current.handleVoiceInput(transcript);
     }
-  }, []);
+    
+    // In turn-based mode, change the speaker after user speaks
+    if (turnBasedMode) {
+      setCurrentSpeaker("Norman AGI");
+    }
+  }, [turnBasedMode]);
 
   // Handle AI responses for speech synthesis and potential blog content
   const handleAIResponse = useCallback((response: string) => {
@@ -44,13 +53,18 @@ const Index = () => {
       voiceUIRef.current.speak(response);
     }
     
-    // Optionally update blog content here when the API integration is complete
-  }, []);
+    // Update the discussion summary with Norman's contributions
+    updateDiscussionSummary(`Norman AGI: ${response.slice(0, 150)}...`);
+    
+    // In turn-based mode, change the speaker after Norman speaks
+    if (turnBasedMode) {
+      setCurrentSpeaker("Solara");
+    }
+  }, [turnBasedMode]);
   
   // Handle speak toggle to coordinate UI states
   const handleSpeakToggle = useCallback((isSpeaking: boolean) => {
-    // Additional UI coordination can be done here if needed
-    console.log('AI speaking state:', isSpeaking);
+    console.log('Norman speaking state:', isSpeaking);
   }, []);
 
   // Handle sending message with attachments
@@ -64,14 +78,18 @@ const Index = () => {
         description: `${attachments.length} file(s) will be processed by the AGI.`,
       });
       
-      // Here you would integrate with your API to process the attachments
       // Simulating a response after file processing
       setTimeout(() => {
-        setBlogTitle("Analysis of Attached Files");
-        setBlogContent("The Norman AGI has analyzed your attached files and generated this blog article.\n\nThis is a placeholder for the actual content that would be generated based on your file analysis. In a real implementation, the files would be sent to the AGI's multimodal synthesis API endpoint and the response would populate this area.\n\nThe content would be formatted as an article and displayed here for easy reading.");
+        const newContent = `${normanAGI.name} has analyzed your files and is joining the discussion with insights.\n\n${blogContent}`;
+        setBlogContent(newContent);
       }, 3000);
     }
-  }, []);
+    
+    // In turn-based mode, change the speaker after sending a message to Norman
+    if (turnBasedMode) {
+      setCurrentSpeaker("Norman AGI");
+    }
+  }, [blogContent, turnBasedMode]);
 
   // Handle secondary AI interactions (Solara)
   const handleSecondaryAIMessage = useCallback((message: string, attachments?: File[]) => {
@@ -84,32 +102,73 @@ const Index = () => {
         description: `${attachments.length} file(s) are being analyzed.`,
       });
       
-      // Simulate Solara processing the files - in real implementation this would call the Solara API
+      // Simulate Solara processing the files
       setTimeout(() => {
-        // Update blog with Solara's analysis
-        setBlogTitle(`${solaraAGI.name}'s Analysis`);
-        setBlogContent(`${solaraAGI.name} has analyzed your files and generated this response.\n\nTarget Location: ${solaraAGI.baseDirectives.election_mission.target_location}\nGoal: ${solaraAGI.baseDirectives.election_mission.goal}\n\nThis is a placeholder for the actual content that would be generated based on your file analysis through Solara's cross-domain intelligence and ethical reasoning systems.\n\nThe content would reflect Solara's mission of identifying trustworthy candidates aligned with smart city initiatives.`);
+        // Update discussion summary with Solara's contributions
+        updateDiscussionSummary(`${solaraAGI.name}: Analyzed files related to ${solaraAGI.baseDirectives.election_mission.target_location} smart city initiative. Checking candidate trustworthiness...`);
       }, 3000);
+    } else {
+      // Update discussion summary with Solara's regular contributions
+      updateDiscussionSummary(`${solaraAGI.name}: ${message.slice(0, 100)}...`);
     }
-  }, []);
+    
+    // In turn-based mode, change the speaker after Solara speaks
+    if (turnBasedMode) {
+      setCurrentSpeaker("User");
+    }
+  }, [turnBasedMode]);
 
   // Handle voice input from web views
   const handleWebViewVoiceInput = useCallback((text: string, viewIndex: number) => {
     console.log(`Voice input from web view ${viewIndex}: ${text}`);
-    // In a real implementation, this would process the voice input
-    // specifically for the web view that generated it
+    // Update discussion summary with research findings
+    updateDiscussionSummary(`Research Browser ${viewIndex + 1}: Found information related to "${text.slice(0, 50)}..."`);
   }, []);
 
   // Handle speak toggle from web views
   const handleWebViewSpeakToggle = useCallback((isSpeaking: boolean, viewIndex: number) => {
     console.log(`Web view ${viewIndex} speaking state: ${isSpeaking}`);
-    // In a real implementation, this would coordinate the speaking state
-    // specifically for the web view that triggered it
   }, []);
+  
+  // Helper function to update the discussion summary
+  const updateDiscussionSummary = (newEntry: string) => {
+    setBlogContent(prevContent => {
+      const timestamp = new Date().toLocaleTimeString();
+      return `[${timestamp}] ${newEntry}\n\n${prevContent}`;
+    });
+  };
+
+  // Toggle turn-based discussion mode
+  const toggleTurnBasedMode = () => {
+    setTurnBasedMode(!turnBasedMode);
+    toast({
+      title: turnBasedMode ? "Free Discussion Mode" : "Turn-Based Discussion Mode",
+      description: turnBasedMode ? 
+        "Anyone can speak at any time." : 
+        `Sequential turns: ${currentSpeaker} → Norman AGI → Solara → User`,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Top controls - Solara AGI Interface */}
+      {/* Discussion mode toggle */}
+      <div className="fixed top-4 left-4 z-50">
+        <button 
+          onClick={toggleTurnBasedMode}
+          className={`px-4 py-2 rounded-lg text-white font-medium transition-colors ${
+            turnBasedMode ? "bg-indigo-600 hover:bg-indigo-700" : "bg-green-600 hover:bg-green-700"
+          }`}
+        >
+          {turnBasedMode ? "Turn-Based Mode" : "Free Discussion Mode"}
+        </button>
+        {turnBasedMode && (
+          <div className="mt-2 bg-white p-2 rounded-lg shadow">
+            <p className="text-sm font-medium">Current Speaker: {currentSpeaker}</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Solara AGI Interface */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-4 items-end">
         <CompactVoiceControls 
           aiName={solaraAGI.name}
@@ -117,28 +176,30 @@ const Index = () => {
           onSpeakToggle={(isSpeaking) => console.log(`${solaraAGI.name} speaking:`, isSpeaking)}
         />
         <ChatInterface2 
-          title="Secondary AI"
+          title="Group Participant"
           aiName={solaraAGI.name}
           onSendMessage={handleSecondaryAIMessage}
         />
       </div>
       
       {/* Main content */}
-      <div className="container mx-auto px-4 py-8 flex h-[calc(100vh-150px)]">
-        {/* Left side: Web Views - Taking full height */}
-        <div className="flex-1 mr-6">
-          <SplitWebView 
-            onVoiceInput={handleWebViewVoiceInput}
-            onSpeakToggle={handleWebViewSpeakToggle}
-          />
-        </div>
-        
-        {/* Right side: Blog Article Area */}
-        <div className="w-1/3">
-          <BlogArticle 
-            title={blogTitle}
-            content={blogContent}
-          />
+      <div className="container mx-auto px-4 py-8 flex flex-col h-[calc(100vh-150px)] pt-20">
+        <div className="flex flex-1 gap-6">
+          {/* Left side: Web Views */}
+          <div className="flex-1">
+            <SplitWebView 
+              onVoiceInput={handleWebViewVoiceInput}
+              onSpeakToggle={handleWebViewSpeakToggle}
+            />
+          </div>
+          
+          {/* Right side: Group Discussion Summary */}
+          <div className="w-1/3">
+            <BlogArticle 
+              title={blogTitle}
+              content={blogContent}
+            />
+          </div>
         </div>
       </div>
       
