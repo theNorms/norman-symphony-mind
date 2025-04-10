@@ -1,4 +1,3 @@
-
 import React, { useRef, useCallback, useState } from 'react';
 import VoiceUI, { VoiceUIHandle } from '@/components/VoiceUI';
 import ChatInterface, { ChatInterfaceHandle } from '@/components/ChatInterface';
@@ -7,6 +6,7 @@ import { toast } from '@/components/ui/use-toast';
 import ChatInterface2, { ChatInterface2Handle } from '@/components/ChatInterface2';
 import { Users, Mic, MicOff, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 // AGI configurations
 const normanAGI = {
