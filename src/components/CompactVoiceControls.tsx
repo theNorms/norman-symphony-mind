@@ -4,11 +4,13 @@ import { Mic, MicOff, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CompactVoiceControlsProps {
+  aiName?: string;
   onUserSpeech?: (text: string) => void;
   onSpeakToggle?: (isSpeaking: boolean) => void;
 }
 
 const CompactVoiceControls: React.FC<CompactVoiceControlsProps> = ({
+  aiName = "Solara",
   onUserSpeech = () => {},
   onSpeakToggle = () => {}
 }) => {
@@ -19,16 +21,32 @@ const CompactVoiceControls: React.FC<CompactVoiceControlsProps> = ({
   const toggleListening = () => {
     setIsListening(!isListening);
     // In a real implementation, this would connect to the Web Speech API
+    if (!isListening) {
+      // Simulate voice recognition
+      setTimeout(() => {
+        const simulatedText = `Hello ${aiName}, this is a simulated voice input.`;
+        onUserSpeech(simulatedText);
+        setIsListening(false);
+      }, 3000);
+    }
   };
 
   // Toggle speaking
   const toggleSpeaking = () => {
     setIsSpeaking(!isSpeaking);
     onSpeakToggle(!isSpeaking);
+    
+    // Simulate speech - in real implementation this would use the Web Speech API
+    if (!isSpeaking) {
+      setTimeout(() => {
+        setIsSpeaking(false);
+        onSpeakToggle(false);
+      }, 5000);
+    }
   };
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+    <div className="flex items-center gap-2 relative">
       <div 
         className={cn(
           "absolute inset-0 rounded-full bg-primary/20 transition-transform duration-1000",
@@ -46,7 +64,7 @@ const CompactVoiceControls: React.FC<CompactVoiceControlsProps> = ({
       <button 
         onClick={toggleSpeaking}
         className={cn(
-          "flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-300",
+          "flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-300 z-10",
           isSpeaking 
             ? "bg-red-500 hover:bg-red-600" 
             : "bg-secondary hover:bg-secondary/80"
@@ -62,7 +80,7 @@ const CompactVoiceControls: React.FC<CompactVoiceControlsProps> = ({
       <button 
         onClick={toggleListening}
         className={cn(
-          "flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-300",
+          "flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-all duration-300 z-10",
           isListening 
             ? "bg-red-500 hover:bg-red-600" 
             : "bg-primary hover:bg-primary/80"

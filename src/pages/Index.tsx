@@ -8,6 +8,23 @@ import CompactVoiceControls from '@/components/CompactVoiceControls';
 import CompactChatInterface from '@/components/CompactChatInterface';
 import { toast } from '@/components/ui/use-toast';
 
+// AGI configurations
+const normanAGI = {
+  name: "Norman AGI",
+  baseUrl: "https://cm99szw0dk19ydnuv2hulqkru.agent.a.smyth.ai"
+};
+
+const solaraAGI = {
+  name: "Solara",
+  version: "2.0",
+  baseDirectives: {
+    election_mission: {
+      target_location: "Imus, Cavite",
+      goal: "identify trustworthy candidate aligned with smart city vision"
+    }
+  }
+};
+
 const Index = () => {
   const voiceUIRef = useRef<VoiceUIHandle>(null);
   const chatInterfaceRef = useRef<ChatInterfaceHandle>(null);
@@ -38,7 +55,7 @@ const Index = () => {
 
   // Handle sending message with attachments
   const handleSendMessage = useCallback((message: string, attachments?: any[]) => {
-    console.log('Sending message to Norman AGI:', message);
+    console.log(`Sending message to ${normanAGI.name}:`, message);
     
     if (attachments && attachments.length > 0) {
       console.log('With attachments:', attachments);
@@ -48,7 +65,7 @@ const Index = () => {
       });
       
       // Here you would integrate with your API to process the attachments
-      // For now, we'll just simulate a response
+      // Simulating a response after file processing
       setTimeout(() => {
         setBlogTitle("Analysis of Attached Files");
         setBlogContent("The Norman AGI has analyzed your attached files and generated this blog article.\n\nThis is a placeholder for the actual content that would be generated based on your file analysis. In a real implementation, the files would be sent to the AGI's multimodal synthesis API endpoint and the response would populate this area.\n\nThe content would be formatted as an article and displayed here for easy reading.");
@@ -56,10 +73,24 @@ const Index = () => {
     }
   }, []);
 
-  // Handle secondary AI interactions
-  const handleSecondaryAIMessage = useCallback((message: string) => {
-    console.log('Message sent to secondary AI:', message);
-    // In a real implementation, this would connect to the secondary AI API
+  // Handle secondary AI interactions (Solara)
+  const handleSecondaryAIMessage = useCallback((message: string, attachments?: File[]) => {
+    console.log(`Message sent to ${solaraAGI.name}:`, message);
+    
+    if (attachments && attachments.length > 0) {
+      console.log(`Files sent to ${solaraAGI.name}:`, attachments);
+      toast({
+        title: `${solaraAGI.name} processing files`,
+        description: `${attachments.length} file(s) are being analyzed.`,
+      });
+      
+      // Simulate Solara processing the files - in real implementation this would call the Solara API
+      setTimeout(() => {
+        // Update blog with Solara's analysis
+        setBlogTitle(`${solaraAGI.name}'s Analysis`);
+        setBlogContent(`${solaraAGI.name} has analyzed your files and generated this response.\n\nTarget Location: ${solaraAGI.baseDirectives.election_mission.target_location}\nGoal: ${solaraAGI.baseDirectives.election_mission.goal}\n\nThis is a placeholder for the actual content that would be generated based on your file analysis through Solara's cross-domain intelligence and ethical reasoning systems.\n\nThe content would reflect Solara's mission of identifying trustworthy candidates aligned with smart city initiatives.`);
+      }, 3000);
+    }
   }, []);
 
   // Handle voice input from web views
@@ -78,14 +109,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Top controls */}
+      {/* Top controls - Solara AGI Interface */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-4 items-end">
         <CompactVoiceControls 
+          aiName={solaraAGI.name}
           onUserSpeech={handleSecondaryAIMessage}
-          onSpeakToggle={(isSpeaking) => console.log('Secondary AI speaking:', isSpeaking)}
+          onSpeakToggle={(isSpeaking) => console.log(`${solaraAGI.name} speaking:`, isSpeaking)}
         />
         <CompactChatInterface 
           title="Secondary AI"
+          aiName={solaraAGI.name}
           onSendMessage={handleSecondaryAIMessage}
         />
       </div>
