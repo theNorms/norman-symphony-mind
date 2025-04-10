@@ -7,8 +7,14 @@ import ChatInterface2, { ChatInterface2Handle } from '@/components/ChatInterface
 import { Users, Mic, MicOff, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// AGI configurations
 const normanAGI = {
   name: "Norman AGI",
   baseUrl: "https://cm99szw0dk19ydnuv2hulqkru.agent.a.smyth.ai"
@@ -36,38 +42,33 @@ const Index = () => {
   const [isJoined, setIsJoined] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceTarget, setVoiceTarget] = useState("current");
 
-  // Handle user speech from voice recognition
   const handleUserSpeech = useCallback((transcript: string) => {
     if (chatInterfaceRef.current) {
       chatInterfaceRef.current.handleVoiceInput(transcript);
     }
   }, []);
 
-  // Handle Norman AGI responses for speech synthesis
   const handleNormanResponse = useCallback((response: string) => {
     if (voiceUIRef.current) {
       voiceUIRef.current.speak(response);
       setNormanTalking(true);
     }
     
-    // In turn-based mode, change the speaker after Norman speaks
     if (turnBasedMode) {
       setCurrentSpeaker("Solara");
     }
   }, [turnBasedMode]);
   
-  // Handle Norman speak toggle
   const handleNormanSpeakToggle = useCallback((isSpeaking: boolean) => {
     setNormanTalking(isSpeaking);
     
-    // When Norman stops speaking and we're in turn-based mode, pass the turn
     if (!isSpeaking && turnBasedMode) {
       setCurrentSpeaker("Solara");
     }
   }, [turnBasedMode]);
 
-  // Handle sending Norman message
   const handleNormanSendMessage = useCallback((message: string, attachments?: any[]) => {
     console.log(`Sending message to ${normanAGI.name}:`, message);
     
@@ -79,13 +80,11 @@ const Index = () => {
       });
     }
     
-    // When message is sent to Norman in turn-based mode, change the speaker
     if (turnBasedMode) {
       setCurrentSpeaker("Norman AGI");
     }
   }, [turnBasedMode]);
 
-  // Handle Solara AI interactions
   const handleSolaraMessage = useCallback((message: string, attachments?: File[]) => {
     console.log(`Message sent to ${solaraAGI.name}:`, message);
     
@@ -97,15 +96,12 @@ const Index = () => {
       });
     }
     
-    // In turn-based mode, change the speaker after sending a message to Solara
     if (turnBasedMode) {
       setCurrentSpeaker("Solara");
     }
   }, [turnBasedMode]);
 
-  // Handle Solara response
   const handleSolaraResponse = useCallback((response: string) => {
-    // In turn-based mode, change the speaker after Solara responds
     if (turnBasedMode) {
       setCurrentSpeaker("Norman AGI");
     }
@@ -113,29 +109,28 @@ const Index = () => {
     setSolaraTalking(true);
   }, [turnBasedMode]);
 
-  // Handle Solara speak toggle
   const handleSolaraSpeakToggle = useCallback((isSpeaking: boolean) => {
     setSolaraTalking(isSpeaking);
     
-    // When Solara stops speaking and we're in turn-based mode, pass the turn
     if (!isSpeaking && turnBasedMode) {
       setCurrentSpeaker("Norman AGI");
     }
   }, [turnBasedMode]);
 
-  // Handle voice input from web views
   const handleWebViewVoiceInput = useCallback((text: string, viewIndex: number) => {
     console.log(`Voice input from web view ${viewIndex}: ${text}`);
     
-    // Send the voice input to the current speaker
-    if (currentSpeaker === "Norman AGI" && chatInterfaceRef.current) {
-      chatInterfaceRef.current.handleVoiceInput(text);
-    } else if (currentSpeaker === "Solara" && chatInterface2Ref.current) {
-      chatInterface2Ref.current.handleVoiceInput(text);
+    if (voiceTarget === "norman" || (voiceTarget === "current" && currentSpeaker === "Norman AGI")) {
+      if (chatInterfaceRef.current) {
+        chatInterfaceRef.current.handleVoiceInput(text);
+      }
+    } else if (voiceTarget === "solara" || (voiceTarget === "current" && currentSpeaker === "Solara")) {
+      if (chatInterface2Ref.current) {
+        chatInterface2Ref.current.handleVoiceInput(text);
+      }
     }
-  }, [currentSpeaker]);
+  }, [currentSpeaker, voiceTarget]);
 
-  // Toggle turn-based discussion mode
   const toggleTurnBasedMode = () => {
     setTurnBasedMode(!turnBasedMode);
     toast({
@@ -146,7 +141,6 @@ const Index = () => {
     });
   };
 
-  // Toggle join discussion
   const toggleJoinDiscussion = () => {
     setIsJoined(!isJoined);
     toast({
@@ -157,7 +151,6 @@ const Index = () => {
     });
   };
 
-  // Pass the turn to the next speaker in turn-based mode
   const passTurn = () => {
     if (!turnBasedMode) return;
     
@@ -176,7 +169,6 @@ const Index = () => {
     }
   };
 
-  // Toggle listening
   const toggleListening = () => {
     setIsListening(!isListening);
     if (!isListening) {
@@ -190,7 +182,6 @@ const Index = () => {
     }
   };
 
-  // Toggle speaking
   const toggleSpeaking = () => {
     setIsSpeaking(!isSpeaking);
     if (isSpeaking) {
@@ -200,9 +191,18 @@ const Index = () => {
     }
   };
 
+  const handleVoiceTargetChange = (value: string) => {
+    setVoiceTarget(value);
+    toast({
+      title: "Voice Target Changed",
+      description: value === "current" 
+        ? "Voice commands will go to the current speaker" 
+        : `Voice commands will go to ${value === "norman" ? "Norman AGI" : "Solara"}`,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header with controls */}
       <div className="w-full bg-white p-4 shadow-sm">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold">AI Collaborative Discussion</h1>
@@ -234,7 +234,20 @@ const Index = () => {
               {isJoined ? "Leave Discussion" : "Join Discussion"}
             </Button>
 
-            {/* Voice control buttons */}
+            <Select
+              value={voiceTarget}
+              onValueChange={handleVoiceTargetChange}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Voice Target" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="current">Current Speaker</SelectItem>
+                <SelectItem value="norman">Norman AGI</SelectItem>
+                <SelectItem value="solara">Solara</SelectItem>
+              </SelectContent>
+            </Select>
+
             <button 
               onClick={toggleSpeaking}
               className={cn(
@@ -270,7 +283,6 @@ const Index = () => {
         </div>
       </div>
       
-      {/* Current speaker indicator */}
       {turnBasedMode && (
         <div className="w-full bg-primary/10 py-2">
           <div className="container mx-auto">
@@ -283,11 +295,8 @@ const Index = () => {
         </div>
       )}
       
-      {/* Main content area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Chat interfaces - 1/3 of the screen */}
         <div className="w-1/3 flex flex-col border-r overflow-hidden">
-          {/* Norman AGI */}
           <div className="h-1/2 border-b p-4 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold">{normanAGI.name}</h2>
@@ -308,7 +317,6 @@ const Index = () => {
             </div>
           </div>
           
-          {/* Solara AGI */}
           <div className="h-1/2 p-4 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold">{solaraAGI.name}</h2>
@@ -332,7 +340,6 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Web browsers - 2/3 of the screen */}
         <div className="w-2/3 p-4 overflow-hidden">
           <SplitWebView 
             onVoiceInput={handleWebViewVoiceInput}
@@ -343,7 +350,6 @@ const Index = () => {
         </div>
       </div>
       
-      {/* Hidden VoiceUI for speech synthesis - no visual display, just functionality */}
       <VoiceUI 
         ref={voiceUIRef}
         onUserSpeech={handleUserSpeech}
