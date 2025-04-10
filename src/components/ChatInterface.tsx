@@ -28,10 +28,15 @@ export interface ChatInterfaceHandle {
 interface ChatInterfaceProps {
   onSendMessage?: (message: string, attachments?: any[]) => void;
   onAIResponse?: (response: string) => void;
+  onSpeakToggle?: (isSpeaking: boolean) => void;
 }
 
 const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
-  { onSendMessage = () => {}, onAIResponse = () => {} },
+  { 
+    onSendMessage = () => {}, 
+    onAIResponse = () => {},
+    onSpeakToggle = () => {} 
+  },
   ref
 ) => {
   const [messages, setMessages] = useState<Message[]>([
@@ -111,6 +116,7 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
     ]);
     
     setIsStreaming(true);
+    onSpeakToggle(true);
     
     // Simulate streaming text
     let currentIndex = 0;
@@ -135,6 +141,9 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
           )
         );
         onAIResponse(fullResponse);
+        setTimeout(() => {
+          onSpeakToggle(false);
+        }, 5000); // Simulate the speech ending after 5 seconds
       }
     }, 50);
   };
@@ -215,13 +224,9 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
   }));
 
   return (
-    <div className="fixed bottom-24 right-6 w-80 sm:w-96 h-96 bg-card rounded-lg shadow-lg overflow-hidden flex flex-col">
-      <div className="p-3 bg-primary text-primary-foreground font-semibold">
-        Norman AGI Assistant
-      </div>
-      
-      <ScrollArea className="flex-grow p-4">
-        <div className="space-y-4">
+    <div className="flex flex-col h-full">
+      <ScrollArea className="flex-grow p-3 h-[calc(100%-80px)]">
+        <div className="space-y-3">
           {messages.map((message) => (
             <div 
               key={message.id}
@@ -264,7 +269,7 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
       
       {/* Attachment display */}
       {attachments.length > 0 && (
-        <div className="p-2 border-t bg-muted/30">
+        <div className="p-2 bg-muted/30">
           <div className="flex flex-wrap gap-2">
             {attachments.map((file, index) => (
               <div key={index} className="bg-primary/10 text-xs px-2 py-1 rounded-full flex items-center gap-1">
@@ -283,7 +288,7 @@ const ChatInterface = forwardRef<ChatInterfaceHandle, ChatInterfaceProps>((
       )}
       
       {/* Input form with file upload */}
-      <form onSubmit={handleSendMessage} className="p-3 border-t">
+      <form onSubmit={handleSendMessage} className="p-3 mt-auto">
         <div className="flex items-center">
           <div className="relative flex-grow">
             <Input

@@ -1,9 +1,10 @@
+
 import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Upload, X, Paperclip, Maximize2, Minimize2 } from 'lucide-react';
+import { Upload, X, Paperclip } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 type Message = {
@@ -31,6 +32,7 @@ interface ChatInterface2Props {
   onSendMessage?: (message: string, attachments?: File[]) => void;
   onAIResponse?: (response: string) => void;
   onClear?: () => void;
+  onSpeakToggle?: (isSpeaking: boolean) => void;
 }
 
 const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
@@ -38,7 +40,8 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
   aiName = "Solara",
   onSendMessage = () => {},
   onAIResponse = () => {},
-  onClear = () => {}
+  onClear = () => {},
+  onSpeakToggle = () => {}
 }, ref) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -49,10 +52,8 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
     }
   ]);
   const [currentInput, setCurrentInput] = useState('');
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [isMinimized, setIsMinimized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -140,6 +141,7 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
     ]);
     
     setIsStreaming(true);
+    onSpeakToggle(true);
     
     let currentIndex = 0;
     const streamInterval = setInterval(() => {
@@ -163,6 +165,11 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
           )
         );
         onAIResponse(fullResponse);
+        
+        // Simulate the end of speech after a few seconds
+        setTimeout(() => {
+          onSpeakToggle(false);
+        }, 5000);
       }
     }, 50);
   };
@@ -187,48 +194,13 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const toggleMinimized = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsMinimized(!isMinimized);
-  };
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isExpanded]);
+  }, [messages]);
 
   return (
-    <div className={cn(
-      "relative border bg-card rounded-lg shadow-lg overflow-hidden transition-all duration-300",
-      isMinimized ? "w-64" : "w-96"
-    )}>
-      <div 
-        className="flex justify-between items-center p-3 bg-primary text-primary-foreground"
-      >
-        <h3 className="font-semibold">{title} ({aiName})</h3>
-        <div className="flex items-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-primary-foreground hover:text-primary-foreground/80 h-8 w-8 p-0"
-            onClick={toggleMinimized}
-          >
-            {isMinimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-primary-foreground hover:text-primary-foreground/80 h-8 w-8 p-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              clearChat();
-            }}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-      
-      <ScrollArea className="p-3 h-96">
+    <div className="flex flex-col h-full">
+      <ScrollArea className="flex-grow p-3 h-[calc(100%-80px)]">
         <div className="space-y-3">
           {messages.map((message) => (
             <div 
@@ -270,7 +242,7 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
       </ScrollArea>
       
       {attachments.length > 0 && (
-        <div className="p-2 border-t bg-muted/30">
+        <div className="p-2 bg-muted/30">
           <div className="flex flex-wrap gap-2">
             {attachments.map((file, index) => (
               <div key={index} className="bg-primary/10 text-xs px-2 py-1 rounded-full flex items-center gap-1">
@@ -288,36 +260,35 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
         </div>
       )}
       
-      <div className="border-t">
-        <form onSubmit={handleSendMessage} className="flex items-center p-3">
-          <Input
-            value={currentInput}
-            onChange={(e) => setCurrentInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1"
-            disabled={isStreaming}
-          />
-          
-          <div className="flex items-center gap-1 ml-2">
+      <form onSubmit={handleSendMessage} className="p-3 mt-auto">
+        <div className="flex items-center">
+          <div className="relative flex-grow">
+            <Input
+              value={currentInput}
+              onChange={(e) => setCurrentInput(e.target.value)}
+              placeholder="Type your message..."
+              className="pr-10"
+              disabled={isStreaming}
+            />
+            
             <button 
               type="button" 
               onClick={handleAttachFile}
-              className="text-muted-foreground hover:text-primary"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary"
               disabled={isStreaming}
             >
               <Paperclip className="w-5 h-5" />
             </button>
-            
-            <Button 
-              type="submit" 
-              variant="ghost"
-              size="icon"
-              disabled={isStreaming || (!currentInput.trim() && attachments.length === 0)}
-              className="text-muted-foreground hover:text-primary"
-            >
-              <Upload className="w-5 h-5" />
-            </Button>
           </div>
+          
+          <Button 
+            type="submit" 
+            disabled={isStreaming || (!currentInput.trim() && attachments.length === 0)}
+            size="icon"
+            className="ml-2"
+          >
+            <Upload className="w-4 h-4" />
+          </Button>
           
           <input 
             type="file" 
@@ -326,8 +297,8 @@ const ChatInterface2 = forwardRef<ChatInterface2Handle, ChatInterface2Props>(({
             className="hidden" 
             multiple 
           />
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 });
